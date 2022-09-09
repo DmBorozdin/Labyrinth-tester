@@ -33,31 +33,65 @@ export default function main(game, start) {
     const reachable = [{ x: start.x, y: start.y }];
     const explored = [];
     let currentNode = { x: start.x, y: start.y };
+    let nextNode = currentNode;
     while (reachable.length !== 0) {
         reachable.shift();
         explored.push(currentNode);
         const exploredStr = explored.slice().map((item) => Object.values(item).join(','));
         const reachableStr = reachable.slice().map((item) => Object.values(item).join(','));
-        const newReachable = getAdjasentNode(game, currentNode);
-        console.log(typeof newReachable);
-        console.log(exploredStr);
+        // const newReach = getAdjasentNode(game, currentNode);
+        game.state(currentNode.x, currentNode.y)
+            .then((state) => {
+            if (state.finish) {
+                console.log(currentNode);
+                return Promise.resolve(currentNode);
+            }
+            const newReachable = [];
+            if (state.right)
+                newReachable.push({ x: currentNode.x + 1, y: currentNode.y });
+            if (state.left)
+                newReachable.push({ x: currentNode.x - 1, y: currentNode.y });
+            if (state.bottom)
+                newReachable.push({ x: currentNode.x, y: currentNode.y + 1 });
+            if (state.top)
+                newReachable.push({ x: currentNode.x, y: currentNode.y - 1 });
+            return newReachable;
+        })
+            .then((newReachable) => (newReachable.filter((item) => !exploredStr.includes(Object.values(item).join(',')))))
+            .then((newReachableFiltered) => {
+            newReachableFiltered.forEach((item) => !reachableStr.includes(Object.values(item).join(',')) && reachable.push(item));
+            return reachable;
+        })
+            .then((reachable) => {
+            nextNode = reachable[0];
+            return nextNode;
+        })
+            .then((nextNode) => (getMoveRoute(game, currentNode, nextNode)))
+            .then(() => currentNode = { x: nextNode.x, y: nextNode.y });
+        // .then(() => game.state(nextNode.x, nextNode.y)
+        //     .then((state) => {
+        //         if(state.finish) {
+        //             console.log(nextNode);
+        //             // return Promise.resolve(nextNode);
+        //         }
+        //     })
+        // );
         // const newUniqReachable = newReachable.filter((item) => {
         //     const jsonItem = JSON.stringify(item);
         //     return !exploredStr.includes(jsonItem);
         // });
-        const newUniqReachable = newReachable.filter((item) => !exploredStr.includes(Object.values(item).join(',')));
-        console.log(newUniqReachable);
+        // const newUniqReachable = newReach.filter((item) => !exploredStr.includes(Object.values(item).join(',')));
         // newUniqReachable.forEach((item) => !reachableStr.includes(Object.values(item).join(',')) && reachable.push(item));
         // let newNode = reachable[0];
-        let newNode = { x: 1, y: 0 };
-        getMoveRoute(game, currentNode, newNode)
-            .then(() => game.state(newNode.x, newNode.y))
-            .then((state) => {
-            if (state.finish) {
-                return Promise.resolve(newNode);
-            }
-        });
-        currentNode = { x: newNode.x, y: newNode.y };
+        // let newNode = {x: 1, y: 0};
+        // getMoveRoute(game, currentNode, newNode)
+        //     .then(() => game.state(newNode.x, newNode.y))
+        //     .then((state) => {
+        //         if(state.finish) {
+        //             return Promise.resolve(newNode);
+        //         }
+        //     })
+        // currentNode = {x: newNode.x, y: newNode.y};
         // game.state(node.x, node.y)
         //     .then((state) => {
         //         if(state.finish) {
